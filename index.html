@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>Assistente de Orientação Residencial</title>
+
+        <style>
+            body {
+                margin: 0;
+                padding: 20px;
+                background: #222;
+                color: white;
+                font-family: Arial;
+                text-align: center;
+            }
+
+            h1 {
+                margin-bottom: 20px;
+            }
+
+            video {
+                width: 100%;
+                max-width: 600px;
+
+                border-radius: 10px;
+                border: 2px solid white;
+            }
+
+            button {
+                margin-top: 20px;
+
+                padding: 15px 30px;
+
+                font-size: 20px;
+
+                cursor: pointer;
+
+                border: none;
+
+                border-radius: 8px;
+            }
+
+            #result {
+                margin-top: 20px;
+
+                font-size: 24px;
+
+                min-height: 50px;
+            }
+
+            canvas {
+                display: none;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Assistente de Orientação Residencial</h1>
+
+        <video id="video" autoplay playsinline></video>
+
+        <br />
+
+        <button id="capture">Analisar Ambiente</button>
+
+        <div id="result">Aguardando...</div>
+
+        <canvas id="canvas"></canvas>
+
+        <script>
+            const video = document.getElementById("video");
+
+            const canvas = document.getElementById("canvas");
+
+            const button = document.getElementById("capture");
+
+            const result = document.getElementById("result");
+
+            async function startCamera() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "user" }, // Mudei para "user" (frontal) para testar no desktop
+                        audio: false,
+                    });
+                    video.srcObject = stream;
+                } catch (err) {
+                    console.error("Erro detalhado:", err);
+                    if (err.name === "NotAllowedError") {
+                        result.innerHTML = "Permissão de câmera negada.";
+                    } else if (err.name === "NotFoundError") {
+                        result.innerHTML = "Nenhuma câmera encontrada.";
+                    } else {
+                        result.innerHTML = "Erro: " + err.message;
+                    }
+                }
+            }
+
+            button.addEventListener("click", async () => {
+                result.innerHTML = "Analisando...";
+
+                canvas.width = video.videoWidth;
+
+                canvas.height = video.videoHeight;
+
+                const ctx = canvas.getContext("2d");
+
+                ctx.drawImage(
+                    video,
+
+                    0,
+
+                    0,
+
+                    canvas.width,
+
+                    canvas.height,
+                );
+
+                const image = canvas.toDataURL("image/jpeg");
+
+                try {
+                    const response = await fetch(
+                        "/analyze",
+
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+
+                            body: JSON.stringify({
+                                image: image,
+                            }),
+                        },
+                    );
+
+                    const data = await response.json();
+
+                    result.innerHTML = data.description;
+                } catch (err) {
+                    result.innerHTML = "Erro de comunicação.";
+                }
+            });
+
+            startCamera();
+        </script>
+    </body>
+</html>
