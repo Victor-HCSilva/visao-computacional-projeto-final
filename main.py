@@ -1,4 +1,5 @@
 import base64
+import logging
 import socket
 from io import BytesIO
 
@@ -6,6 +7,8 @@ from flask import Flask, jsonify, render_template, request
 from PIL import Image
 
 app = Flask(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 @app.route("/")
@@ -98,7 +101,8 @@ def get_local_ip():
 
         return ip
 
-    except:
+    except Exception as error:
+        logger.info(f"Erro ocorrido ao tentar resgatar o IP da máquina: {error}")
         return "127.0.0.1"
 
 
